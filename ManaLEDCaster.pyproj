@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{cc133026-36b5-4d04-9931-b90612b63d72}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>test.py</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId>Global|ContinuumAnalytics|Anaconda36-64</InterpreterId>
+    <Name>ManaLEDCaster</Name>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="ledsampler.ui" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="logics\encoder.py" />
+    <Compile Include="globals.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="logics\impainter.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ledsampler.py" />
+    <Compile Include="logics\linkercore.py" />
+    <Compile Include="logics\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="main.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="logics\node2d.py" />
+    <Compile Include="properties\displayChain.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="properties\encoder.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="properties\generic.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="properties\node.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="properties\pos2d.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="properties\propertyEditor.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="logics\property.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="properties\shape.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="properties\simple.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="logics\renderer.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="logics\shape.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="properties\__init__.py" />
+    <Compile Include="test.py" />
+    <Compile Include="logics\timedValue.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="logics\utilcolor.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="Global|ContinuumAnalytics|Anaconda36-64" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="logics\" />
+    <Folder Include="properties\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+</Project>
