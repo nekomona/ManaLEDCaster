@@ -7,8 +7,10 @@ from properties.node import buildNodeProperties
 
 from PyQt5 import QtGui, QtWidgets
 
-def buildNodePropertyPage(host : QtWidgets.QLayout, node : logics.node2d.TreeNode):
+def buildNodePropertyPage(mwindow, node : logics.node2d.TreeNode):
     if node is not None:
+        host = mwindow.propertyWidget.layout()
+
         globals.propertyContainer.activeNode = node
         editorBase = PropertyEditorTree()
         host.addLayout(buildNodeHeader(editorBase, node))
@@ -21,6 +23,7 @@ def buildNodePropertyPage(host : QtWidgets.QLayout, node : logics.node2d.TreeNod
         flayout = QtWidgets.QFormLayout()
         flayout.setHorizontalSpacing(12)
         editorBase.flayout = flayout
+        editorBase.mwindow = mwindow
         for rows in buildNodeProperties(editorBase, node):
             if type(rows) == tuple:
                 flayout.addRow(*rows)
@@ -39,9 +42,11 @@ def buildNodeHeader(editor : PropertyEditorTree, node : logics.node2d.TreeNode2D
     nname = QtWidgets.QLineEdit(node.name)
     nname.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
     
-    def updateName():
-        node.name = nname.text()
-    nname.returnPressed.connect(updateName)
+    def updateName(nval):
+        node.name = nval
+        editor.mwindow.updateTreeName()
+
+    nname.textChanged.connect(updateName)
     editor.name = nname
 
     ntype = QtWidgets.QLabel(str(type(node)))

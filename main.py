@@ -15,8 +15,6 @@ import time
 import numpy as np
 import cv2
 
-globals.frameLength = 100
-
 def buildQtTree(root, tree):
     cpt = QtWidgets.QTreeWidgetItem(root)
     cpt.setText(0, tree.name)
@@ -25,6 +23,13 @@ def buildQtTree(root, tree):
 
     for ch in tree.child:
         buildQtTree(cpt, ch)
+
+def updateQtTreeName(root):
+    root.setText(0, root.node.name)
+    chcnt = root.childCount()
+    for i in range(chcnt):
+        ch = root.child(i)
+        updateQtTreeName(ch)
 
 def buildQtLinkerTree(root, tree):
     cpt = QtWidgets.QTreeWidgetItem(root)
@@ -93,6 +98,7 @@ class LSWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.mm_editing.clicked.connect(self.paintScreen)
         self.mm_exporting.clicked.connect(self.paintScreen)
 
+        self.hs_currframe.setMaximum(globals.frameLength)
         self.hs_currframe.valueChanged.connect(self.hscrollChange)
 
         self.pushButton.clicked.connect(self.renderTest)
@@ -105,8 +111,7 @@ class LSWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.playTimer = QtCore.QTimer()
         self.playTimer.timeout.connect(self.frameAdvance)
         self.playTimer.setInterval(33)
-
-        globals.frameLength = 1000
+        self.ltime = None
 
     def setTreeBase(self, pbase):
         self.pbase = pbase
@@ -140,6 +145,12 @@ class LSWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if self.pbase:
             buildQtTree(self.tree_inspector, self.pbase)
 
+    def updateTreeName(self):
+        chcnt = self.tree_inspector.topLevelItemCount()
+        for i in range(chcnt):
+            ch = self.tree_inspector.topLevelItem(i)
+            updateQtTreeName(ch)
+
     def buildLinkerTree(self):
         self.tree_linker.clear()
         if self.lbase:
@@ -160,7 +171,12 @@ class LSWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if self.mm_editing.isChecked() or self.mm_exporting.isChecked():
                 impainter.paintSampledTree(self.worldImg, self.scale, self.pbase, self.frame)
             if self.mm_designing.isChecked() or self.mm_linking.isChecked():
-                impainter.paintImageTree(self.worldImg, self.scale, self.pbase, self.frame)
+                if globals.enable_opencl:
+                    bgim = cv2.UMat(self.worldImg)
+                    impainter.paintImageTree(bgim, self.worldImg.shape, self.scale, self.pbase, self.frame)
+                    self.worldImg = bgim.get()
+                else:
+                    impainter.paintImageTree(self.worldImg, self.worldImg.shape, self.scale, self.pbase, self.frame)
             if not self.mm_exporting.isChecked():
                 impainter.paintSignTree(self.worldImg, self.scale, self.pbase)
 
@@ -181,7 +197,7 @@ class LSWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     # Properties
     def buildProperty(self, node):
             clearLayout(self.propertyWidget.layout())
-            propertyEditor.buildNodePropertyPage(self.propertyWidget.layout(), node)
+            propertyEditor.buildNodePropertyPage(self, node)
 
     # UI callbacks
     def treeClick(self, qModelIndex):
