@@ -1,6 +1,8 @@
 import logics.node2d
 import logics.linkercore
 
+import globals
+
 import cv2
 import numpy as np
 import math
@@ -25,35 +27,35 @@ def paintNodeSampled(img, scale, node, frame):
             if fcolor:
                 node.sampleShape.paintShape(img, node.absPos, scale, fcolor, -1)
 
-def paintImageTree(img, scale, tree, frame = 0):
+def paintImageTree(img, shape, scale, tree, frame = 0):
     for ch in tree.child:
-        paintImageTree(img, scale, ch, frame)
-    paintNodeImage(img, scale, tree, frame)
+        paintImageTree(img, shape, scale, ch, frame)
+    paintNodeImage(img, shape, scale, tree, frame)
 
-def paintNodeImage(img, scale, node, frame):
-    pos = node.absPos.getScaledPos(scale)
-    outputsize = img.shape[1:None:-1]
-    imscale = scale * node.absPos.scale
-    widthScale = None
-    
-    imang = -math.degrees(node.absPos.rotRad)
-
+def paintNodeImage(img, shape, scale, node, frame):
     nodeim = None
+    widthScale = None
     if isinstance(node, logics.node2d.Image):
         nodeim = node.image
         widthScale = node.widthScale
+        h, w = node.imageSize
     elif isinstance(node, logics.node2d.Video):
         nodeim = node.fetchFrame(frame)
         widthScale = node.widthScale
+        h, w = node.frameSize
 
     if nodeim is not None:
-        h, w = nodeim.shape[:2]
+        pos = node.absPos.getScaledPos(scale)
+        outputsize = shape[1:None:-1]
+        # outputsize = img.shape[1:None:-1]
+        imscale = scale * node.absPos.scale
+        imang = -math.degrees(node.absPos.rotRad)
+        # h, w = nodeim.shape[:2]
         if widthScale:
             wmod = w * widthScale
         else:
             wmod = w
         # Merge translate, rotate and scale into a single affine transform
-        mask = np.full((h, w), 255, np.uint8)
         tmat = cv2.getRotationMatrix2D((wmod/2, h/2), imang, imscale)
         # Add translate and move image center to node position
         tmat[:, 2] += pos
@@ -61,15 +63,11 @@ def paintNodeImage(img, scale, node, frame):
         # Magic matrix operation for width rescale!
         # (Actually simplified matmul with diag(w, 1, 1))
         tmat[:, 0] *= widthScale
-        # Transform on both image and mask
-        nodeimout = cv2.warpAffine(nodeim, tmat, outputsize)
-        maskout = cv2.warpAffine(mask, tmat, outputsize)
-        # Mask add to blend frame into image
-        ret, binmask = cv2.threshold(maskout, 10, 255, cv2.THRESH_BINARY)
-        invmask = cv2.bitwise_not(binmask)
-        imfg = cv2.bitwise_and(nodeimout, nodeimout, mask=binmask)
-        imbg = cv2.bitwise_and(img, img, mask=invmask)
-        cv2.add(imfg, imbg, img)
+        # GPU operation through T-API
+        if globals.enable_opencl:
+            tmat = cv2.UMat(tmat)
+        # Transform the image onto target mat
+        nodeimout = cv2.warpAffine(nodeim, tmat, outputsize, img, borderMode=cv2.BORDER_TRANSPARENT)
 
 def paintSignTree(img, scale, tree):
     for ch in tree.child:

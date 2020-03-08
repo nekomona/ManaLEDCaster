@@ -1,6 +1,7 @@
 from logics.encoder import *
 import logics.shape
 
+import globals
 from logics.property import Property
 
 import threading
@@ -201,11 +202,19 @@ class Image(TreeNode2D):
 
         self.imageSize = [0, 0]
         self.widthScale = 1.0
+        
+    def loadImage(self):
+        self.image = cv2.imread('iconode.png')
+        self.imageSize = self.image.shape[:2]
+        if globals.enable_opencl:
+            self.image = cv2.UMat(self.image)
 
     def copyPosTree(self, parent = None):
         nnode = Image(parent)
         nnode.offPos = copy.copy(self.offPos)
         nnode.image = self.image
+        nnode.imageSize = self.imageSize
+        nnode.widthScale = self.widthScale
 
         for ch in self.child:
             ch.copyPosTree(nnode)
@@ -223,6 +232,7 @@ class Video(TreeNode2D):
         self.file = ""
         self.videocap = None
         self.fetcher = None
+        self.lastFrame = -2
 
         self.frameSize = [0, 0]
         self.widthScale = 1.0
@@ -236,6 +246,9 @@ class Video(TreeNode2D):
         self.frameLength = int(self.videocap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.frameSize[0] = int(self.videocap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.frameSize[1] = int(self.videocap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        
+        self.lastFrame = -1
+        self.lastImage = None
 
     def getMappedFrame(self, frame):
         if self.overrunMode == "none":
@@ -256,11 +269,22 @@ class Video(TreeNode2D):
         nframe = self.getMappedFrame(frame)
         if nframe is None:
             return None
+        elif nframe == self.lastFrame+1:
+            retval, nimg = self.videocap.read()
+            if globals.enable_opencl:
+                nimg = cv2.UMat(nimg)
+        elif nframe ==self.lastFrame:
+            nimg = self.lastImage
+        else:
+            self.videocap.set(cv2.CAP_PROP_POS_FRAMES, nframe)
+            retval, nimg = self.videocap.read()
+            if globals.enable_opencl:
+                nimg = cv2.UMat(nimg)
 
-        self.videocap.set(cv2.CAP_PROP_POS_FRAMES, nframe)
-        retval, rim = self.videocap.read()
+        self.lastFrame = nframe
+        self.lastImage = nimg
 
-        return rim
+        return nimg
 
     def setupThreading(self, numthread):
         self.fetcher = ThreadedFetcher(self.getMappedFrame, self.file, numthread)
@@ -271,6 +295,7 @@ class Video(TreeNode2D):
         nnode.videocap = self.videocap
         nnode.fetcher = self.fetcher
         nnode.frameSize = self.frameSize
+        nnode.widthScale = self.widthScale
         nnode.overrunMode = self.overrunMode
         nnode.startFrame = self.startFrame
         nnode.frameLength = self.frameLength
@@ -295,13 +320,19 @@ class ThreadedFetcher(object):
         for frame in range(startframe, endframe):
             # Fetch next frame
             nframe = self.getMappedFrame(frame)
+            if nframe is None:
+                nimg = None
             if nframe == lframe+1:
                 retval, nimg = videocap.read()
+                if globals.enable_opencl:
+                    nimg = cv2.UMat(nimg)
             elif nframe == lframe:
                 nimg = limg
             else:
                 videocap.set(cv2.CAP_PROP_POS_FRAMES, nframe)
                 retval, nimg = videocap.read()
+                if globals.enable_opencl:
+                    nimg = cv2.UMat(nimg)
 
             lframe = nframe
             limg = nimg

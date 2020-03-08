@@ -5,10 +5,11 @@ import logics.shape
 pbase = TreeNode2D()
 
 pim = Image(pbase)
-pim.image = cv2.imread('iconode.png')
+pim.file = 'iconode.png'
+pim.loadImage()
 
 pvid = Video(pbase)
-pvid.file = "ba.flv"
+pvid.file = "longVid.mp4"
 pvid.loadVideo()
 
 lbase = DisplayChain()
@@ -42,8 +43,8 @@ for y in range(8):
 
 # Round LED array
 
-for i in range(1):
-    for j in range(1):
+for i in range(4):
+    for j in range(4):
         parr = TreeNode2D(pbase)
         parr.offPos.posX = 80 + 32*i
         parr.offPos.posY = 40 + 32*j

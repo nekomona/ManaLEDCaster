@@ -1,6 +1,7 @@
 from logics.node2d import *
 from logics.timedValue import TimedDiscreteValue
 import logics.impainter as impainter
+import globals
 
 import threading
 import queue
@@ -132,12 +133,13 @@ class RenderWorker(object):
                     edged = epnt[1]
         self.pointRenderArea = [int(edgel), int(edgeu), int(edger - edgel), int(edged - edgeu)]
 
-        self.drawBuff = np.full((self.pointRenderArea[3], self.pointRenderArea[2], 3), (255, 255, 255), np.uint8)
+        self.buffShape = (self.pointRenderArea[3], self.pointRenderArea[2], 3)
+        self.drawBuff = np.zeros(self.buffShape, np.uint8)
         self.offset = (self.pointRenderArea[0], self.pointRenderArea[1])
 
     def renderPointArea(self):
         self.pbase.iterChilds(lambda node: node.absPos.setOffset(self.offset))
-        impainter.paintImageTree(self.drawBuff, self.scale, self.pbase, self.frame)
+        impainter.paintImageTree(self.drawBuff, self.buffShape, self.scale, self.pbase, self.frame)
 
     def renderPointSampler(self):
         for pnt in self.pointSamplers:
@@ -268,7 +270,8 @@ class FixedPosRenderThread(threading.Thread):
 class FixedPosRenderWorker(object):
     def __init__(self, frame, fprenderer, pbase):
         self.frame = frame
-        self.drawBuff = np.full((fprenderer.pointRenderArea[3], fprenderer.pointRenderArea[2], 3), (255, 255, 255), np.uint8)
+        self.buffShape = (fprenderer.pointRenderArea[3], fprenderer.pointRenderArea[2], 3)
+        self.drawBuff = np.zeros(self.buffShape, np.uint8)
         self.offset = fprenderer.offset
 
         self.pointSamplers = fprenderer.pointSamplers
@@ -281,7 +284,12 @@ class FixedPosRenderWorker(object):
     def renderPointArea(self):
         self.pbase.evalPos()
         self.pbase.iterChilds(lambda node: node.absPos.setOffset(self.offset))
-        impainter.paintImageTree(self.drawBuff, self.scale, self.pbase, self.frame)
+        if globals.enable_opencl:
+            drbuf = cv2.UMat(self.drawBuff)
+            impainter.paintImageTree(drbuf, self.buffShape, self.scale, self.pbase, self.frame)
+            self.drawBuff = drbuf.get()
+        else:
+            impainter.paintImageTree(self.drawBuff, self.buffShape, self.scale, self.pbase, self.frame)
 
     def renderPointSampler(self):
         for i, pnt in enumerate(self.pointSamplers):

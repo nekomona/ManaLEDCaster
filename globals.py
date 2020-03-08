@@ -5,4 +5,6 @@ rebuildProperty = None
 repaintScreen = None
 propertyContainer = None
 
-frameLength = 1000
+enable_opencl = False
+
+frameLength = 2200
